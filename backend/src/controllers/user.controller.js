@@ -49,6 +49,22 @@ const registerUser = asyncHandler(async (req, res) => {
   if (!avatar) {
     throw new ApiError(400, "Avatar file is required")
   }
+
+  const user= await User.create({
+    fullname,
+    avatar: avatar.url,
+    coverImage: coverImage?.url || "",
+    email,
+    password,
+    username: username.toLowerCase(),
+  })
+  
+  const createdUser= await User.findById(user._id).select(
+    "-password -refreshTokens"
+  )
+  if (!createdUser){
+    throw new ApiError(500, "Error while creating user")
+  }
 })
 
 export default registerUser;
