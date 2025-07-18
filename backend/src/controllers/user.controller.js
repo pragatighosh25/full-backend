@@ -82,5 +82,49 @@ const loginUser = asyncHandler(async (req, res) => {
   //generate access token
   //generate refresh token
   //return success response with user details and tokens
+  //send cookies
+
+  const {email,username, password} = req.body;
+  if (!email || !username) {
+    throw new ApiError(400, "Email or username is required")
+  }
+
+  const user = await User.findOne({
+    $or: [{email}, {username: username.toLowerCase()}]
+  })
+  if (!user) {
+    throw new ApiError(404, "User not found")
+  }
+  
+  if (!password) {
+    throw new ApiError(400, "Password is required")
+  }
+
+  const isPasswordValid = await user.isPasswordCorrect(password)
+  if (!isPasswordValid) {
+    throw new ApiError(401, "Invalid password")
+  }
+
+  const accessToken = user.generateAccessToken()
+  const refreshToken = user.generateRefreshToken()
+
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+  })
+
+  return res.status(200).json(
+    new ApiResponse(200, {
+      user: {
+        id: user._id,
+        email: user.email,
+        username: user.username,
+        fullname: user.fullname,
+      },
+      accessToken,
+      refreshToken,
+    }, "User logged in successfully")
+  )
 })
 export default { registerUser, loginUser };
