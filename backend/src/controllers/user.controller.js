@@ -41,7 +41,6 @@ const registerUser = asyncHandler(async (req, res) => {
   const coverImageLocalPath= req.files?.coverImage[0]?.path;
 
   if (!avatarLocalPath) {
-    console.log("REQ.FILES:", req.files);
     throw new ApiError(400, "Avatar file is required")
   }
 
@@ -69,8 +68,19 @@ const registerUser = asyncHandler(async (req, res) => {
   }
 
   return res.status(201).json(
-    new ApiResponse(200, createdUser, "user registered successfully")
+    new ApiResponse(201, createdUser, "user registered successfully")
   )
 })
 
-export default registerUser;
+const loginUser = asyncHandler(async (req, res) => {
+  //get user details from frontend
+  //username or email login
+  //find the user
+  //if user not found, return error
+  //check if password is correct
+  //if password is incorrect, return error
+  //generate access token
+  //generate refresh token
+  //return success response with user details and tokens
+})
+export default { registerUser, loginUser };
