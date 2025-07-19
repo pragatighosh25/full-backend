@@ -4,6 +4,22 @@ import {User} from '../models/user.model.js';
 import uploadOnCloudinary from '../utils/cloudinary.js'
 import ApiResponse from '../utils/ApiResponse.js';
 
+const generateAccessAndRefreshToken =async (userId) =>{
+  try {
+    const user= await User.findById(userId)
+    const accessToken= user.generateAccessToken();
+    const refreshToken= user.generateRefreshToken();
+
+    user.refreshTokens= refreshToken;
+    user.save({ validateBeforeSave: false });
+
+    return { accessToken, refreshToken };
+  } catch (error) {
+    throw new ApiError(500, "Error generating refresh and access tokens")
+    
+  }
+}
+
 const registerUser = asyncHandler(async (req, res) => {
   //get user details from frontend
   //validate user details are not empty
@@ -105,26 +121,28 @@ const loginUser = asyncHandler(async (req, res) => {
     throw new ApiError(401, "Invalid password")
   }
 
-  const accessToken = user.generateAccessToken()
-  const refreshToken = user.generateRefreshToken()
+  const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id)
 
-  res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-  })
-
-  return res.status(200).json(
-    new ApiResponse(200, {
-      user: {
-        id: user._id,
-        email: user.email,
-        username: user.username,
-        fullname: user.fullname,
-      },
-      accessToken,
-      refreshToken,
-    }, "User logged in successfully")
+  const loggedInUser = await User.findById(user._id).select(
+    "-password -refreshTokens"
   )
+
+  const cookieOptions = {
+    httpOnly: true,
+    secure: true,
+  };
+
+  
+  return res
+    .status(200)
+    .cookie("refreshToken", refreshToken, cookieOptions)
+    .cookie("accessToken", accessToken, cookieOptions)
+    .json(
+      new ApiResponse(200, {
+        user: loggedInUser,
+        accessToken,
+        refreshToken
+      }, "User logged in successfully")
+    )
 })
-export default { registerUser, loginUser };
+export { registerUser, loginUser };
