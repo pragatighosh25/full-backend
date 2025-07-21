@@ -294,23 +294,23 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 });
 
 const updateUserCoverImage = asyncHandler(async (req, res) => {
-  const avatarLocalPath = req.file?.path;
+  const coverImageLocalPath = req.file?.path;
 
-  if (!avatarLocalPath) {
-    throw new ApiError(400, "Avatar is required");
+  if (!coverImageLocalPath) {
+    throw new ApiError(400, "coverImage is required");
   }
 
-  const avatar = await uploadOnCloudinary(avatarLocalPath);
+  const coverImage = await uploadOnCloudinary(coverImageLocalPath);
 
-  if (!avatar.url) {
-    throw new ApiError(400, "Error while uploading avatar");
+  if (!coverImage.url) {
+    throw new ApiError(400, "Error while uploading coverImage");
   }
 
   const user = await User.findByIdAndUpdate(
     req.user?.id,
     {
       $set: {
-        avatar: avatar.url,
+        coverImage: coverImage.url,
       },
     },
     { new: true }
