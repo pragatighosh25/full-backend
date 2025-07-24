@@ -332,6 +332,41 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
     throw new ApiError(404, "User not found");
   }
 
+  const channel= await User.aggregate([
+    {
+      $match: { username }
+    },
+    {
+      $lookup: {
+        from: "videos",
+        localField: "_id",
+        foreignField: "owner",
+        as: "videos"
+      }
+    },
+    {
+      $project: {
+        _id: 1,
+        fullname: 1,
+        username: 1,
+        avatar: 1,
+        coverImage: 1,
+        videos: {
+          $map: {
+            input: "$videos",
+            as: "video",
+            in: {
+              _id: "$$video._id",
+              title: "$$video.title",
+              thumbnail: "$$video.thumbnail",
+              createdAt: "$$video.createdAt"
+            }
+          }
+        }
+      }
+    }
+  ]);
+
   return res
     .status(200)
     .json(new ApiResponse(200, user, "User channel profile fetched successfully"));
