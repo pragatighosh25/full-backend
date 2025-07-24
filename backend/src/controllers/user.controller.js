@@ -341,6 +341,14 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         from: "subscriptions",
         localField: "_id",
         foreignField: "owner",
+        as: "subscribers"
+      }
+    },
+    {
+      $lookup: {
+        from: "videos",
+        localField: "_id",
+        foreignField: "owner",
         as: "videos"
       }
     },
