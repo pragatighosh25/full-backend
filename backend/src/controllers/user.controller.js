@@ -5,6 +5,7 @@ import uploadOnCloudinary from "../utils/cloudinary.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 import { use } from "react";
+import mongoose from "mongoose";
 
 const generateAccessAndRefreshToken = async (userId) => {
   try {
@@ -392,6 +393,63 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, channel[0], "User channel profile fetched successfully"));
 });
 
+const getWatchHistory = asyncHandler(async (req, res) => {
+  //get user id from req.user
+  const user = await User.aggregate([
+    // Match the user by ID
+    {
+      $match: { _id: new mongoose.Types.ObjectId(req.user._id) }
+    },
+    // Lookup to get the watch history
+    {
+      $lookup: {
+        from: "videos",
+        localField: "watchHistory",
+        foreignField: "_id",
+        as: "watchHistory",
+        pipeline: [
+          {
+            $lookup: {
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",
+              as: "owner",
+              pipeline: [
+                {
+                  $project: {
+                    fullname: 1,
+                    username: 1,
+                    avatar: 1
+                  }
+                }
+              ]
+            }
+          },
+        ]
+      }
+    },
+    {
+      $project: {
+        _id: 0,
+        watchHistory: 1,
+        "watchHistory.channel": 1 //include channel details in the response
+      }
+    }
+  ]);
+
+  if (!user) {
+    throw new ApiError(401, "User not found");
+  }
+
+  const watchHistory = await Video.find({ _id: { $in: req.user?.watchHistory } })
+    .populate("channel", "fullname username avatar")
+    .sort({ createdAt: -1 });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, watchHistory, "Watch history fetched successfully"));
+});
+
 export {
   registerUser,
   loginUser,
@@ -402,5 +460,6 @@ export {
   updateAccountDetails,
   updateUserAvatar,
   updateUserCoverImage,
-  getUserChannelProfile
+  getUserChannelProfile,
+  getWatchHistory
 };
