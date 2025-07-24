@@ -425,29 +425,23 @@ const getWatchHistory = asyncHandler(async (req, res) => {
               ]
             }
           },
+          {
+            $addFields: {
+              "owner": { $first: "$owner" } //get the first owner from the array
+            }
+          }
         ]
       }
     },
-    {
-      $project: {
-        _id: 0,
-        watchHistory: 1,
-        "watchHistory.channel": 1 //include channel details in the response
-      }
-    }
   ]);
 
   if (!user) {
     throw new ApiError(401, "User not found");
   }
 
-  const watchHistory = await Video.find({ _id: { $in: req.user?.watchHistory } })
-    .populate("channel", "fullname username avatar")
-    .sort({ createdAt: -1 });
-
   return res
     .status(200)
-    .json(new ApiResponse(200, watchHistory, "Watch history fetched successfully"));
+    .json(new ApiResponse(200, user[0].watchHistory, "Watch history fetched successfully"));
 });
 
 export {
