@@ -325,6 +325,18 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, user, "Cover image updated successfully"));  
 });
 
+const getUserChannelProfile = asyncHandler(async (req, res) => {
+  const {username} = req.params;
+
+  if (!username) {
+    throw new ApiError(404, "User not found");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "User channel profile fetched successfully"));
+});
+
 export {
   registerUser,
   loginUser,
@@ -334,5 +346,6 @@ export {
   getCurrentUser,
   updateAccountDetails,
   updateUserAvatar,
-  updateUserCoverImage
+  updateUserCoverImage,
+  getUserChannelProfile
 };
